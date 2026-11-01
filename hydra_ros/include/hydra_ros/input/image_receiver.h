@@ -154,9 +154,11 @@ ImageReceiverImpl<SemanticT>::ImageReceiverImpl(const Config& config,
 
 template <typename SemanticT>
 bool ImageReceiverImpl<SemanticT>::initImpl() {
-  color_sub_ = ColorSubscriber(ianvs::NodeHandle::this_node(ns_));
-  depth_sub_ = DepthSubscriber(ianvs::NodeHandle::this_node(ns_));
-  semantic_sub_ = SemanticT(ianvs::NodeHandle::this_node(ns_));
+  // per-topic depth follows the sync queue so images are not dropped before matching
+  const auto nh = ianvs::NodeHandle::this_node(ns_);
+  color_sub_ = ColorSubscriber(nh, config.queue_size);
+  depth_sub_ = DepthSubscriber(nh, config.queue_size);
+  semantic_sub_ = SemanticT(nh, config.queue_size);
   sync_.reset(new Synchronizer(Policy(config.queue_size),
                                color_sub_.getFilter(),
                                depth_sub_.getFilter(),
